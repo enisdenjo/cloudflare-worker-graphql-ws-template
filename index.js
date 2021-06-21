@@ -1,4 +1,4 @@
-import { makeServer } from 'graphql-ws/lib/index.mjs' // TODO-db-210621 use es modules by default
+import { makeServer } from 'graphql-ws'
 import { buildSchema } from 'graphql'
 import graphiql from './graphiql'
 
