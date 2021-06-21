@@ -1,72 +1,136 @@
 const template = `
-<style>
-  body {
-    margin: 1rem;
-    font-family: monospace;
-  }
-</style>
-<p>Number of clicks: <span id="num"></span></p>
-<button id="click">Click me</button>
-<p>You can also send a message that the WebSocket server doesn't recognize. This will cause the WebSocket server to return an "error" payload back to the client.</p>
-<button id="unknown">Simulate Unknown Message</button>
-<p>When you're done clicking, you can close the connection below. Further clicks won't work until you refresh the page.</p>
-<button id="close">Close connection</button>
-<p id="error" style="color: red;"></p>
-<h4>Incoming WebSocket data</h4>
-<ul id="events"></ul>
-<script>
-  let ws
-  async function websocket(url) {
-    ws = new WebSocket(url, 'testenring')
-    if (!ws) {
-      throw new Error("server didn't accept ws")
-    }
-    ws.addEventListener("open", () => {
-      console.log('Opened websocket')
-      updateCount(0)
-    })
-    ws.addEventListener("message", ({ data }) => {
-      const { count, tz, error } = JSON.parse(data)
-      addNewEvent(data)
-      if (error) {
-        setErrorMessage(error)
-      } else {
-        setErrorMessage()
-        updateCount(count)
+<!--
+ *  Copyright (c) 2021 GraphQL Contributors
+ *  All rights reserved.
+ *
+ *  This code is licensed under the MIT license.
+ *  Use it however you wish.
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        height: 100%;
+        margin: 0;
+        width: 100%;
+        overflow: hidden;
       }
-    })
-    ws.addEventListener("close", () => {
-      console.log('Closed websocket')
-      const list = document.querySelector("#events")
-      list.innerText = ""
-      updateCount(0)
-      setErrorMessage()
-    })
-  }
-  const url = new URL(window.location)
-  url.protocol = "wss"
-  url.pathname = "/ws"
-  websocket(url)
-  document.querySelector("#click").addEventListener("click", () => {
-    ws.send("CLICK")
-  })
-  const updateCount = (count) => {
-    document.querySelector("#num").innerText = count
-  }
-  const addNewEvent = (data) => {
-    const list = document.querySelector("#events")
-    const item = document.createElement("li")
-    item.innerText = data
-    list.prepend(item)
-  }
-  const closeConnection = () => ws.close()
-  document.querySelector("#close").addEventListener("click", closeConnection)
-  document.querySelector("#unknown").addEventListener("click", () => ws.send("HUH"))
-  const setErrorMessage = message => {
-    document.querySelector("#error").innerHTML = message ? message : ""
-  }
-</script>
-`
+
+      #graphiql {
+        height: 100vh;
+      }
+    </style>
+
+    <!--
+      This GraphiQL example depends on Promise and AsyncIterator, which are available in
+      modern browsers, but can be "polyfilled" for older browsers.
+      GraphiQL itself depends on React DOM.
+      If you do not want to rely on a CDN, you can host these files locally or
+      include them directly in your favored resource bunder.
+    -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@16/umd/react.development.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"
+    ></script>
+
+    <!--
+      These two files can be found in the npm module, however you may wish to
+      copy them directly into your environment, or perhaps include them in your
+      favored resource bundler.
+     -->
+    <link rel="stylesheet" href="https://unpkg.com/graphiql/graphiql.min.css" />
+  </head>
+
+  <body>
+    <div id="graphiql">Loading...</div>
+    <script
+      src="https://unpkg.com/graphiql/graphiql.min.js"
+      type="application/javascript"
+    ></script>
+    <script
+      src="https://unpkg.com/graphql-ws/umd/graphql-ws.min.js"
+      type="application/javascript"
+    ></script>
+
+    <script>
+      const url = new URL(window.location)
+      url.protocol = "wss"
+      url.pathname = "/graphql"
+
+      const wsClient = graphqlWs.createClient({
+        url,
+        lazy: false, // connect as soon as the page opens
+      });
+
+      function subscribe(payload) {
+        let deferred = null;
+        const pending = [];
+        let throwMe = null,
+          done = false;
+        const dispose = wsClient.subscribe(payload, {
+          next: (data) => {
+            pending.push(data);
+            deferred?.resolve(false);
+          },
+          error: (err) => {
+            if (err instanceof Error) {
+              throwMe = err;
+            } else if (err instanceof CloseEvent) {
+              throwMe = new Error(
+                (
+                  "Socket closed with event " +
+                  err.code +
+                  " " +
+                  err.reason
+                ).trim()
+              );
+            } else {
+              // GraphQLError[]
+              throwMe = new Error(err.map(({ message }) => message).join(", "));
+            }
+            deferred?.reject(throwMe);
+          },
+          complete: () => {
+            done = true;
+            deferred?.resolve(true);
+          },
+        });
+        return {
+          [Symbol.asyncIterator]() {
+            return this;
+          },
+          async next() {
+            if (done) return { done: true, value: undefined };
+            if (throwMe) throw throwMe;
+            if (pending.length) return { value: pending.shift() };
+            return (await new Promise(
+              (resolve, reject) => (deferred = { resolve, reject })
+            ))
+              ? { done: true, value: undefined }
+              : { value: pending.shift() };
+          },
+          async return() {
+            dispose();
+            return { done: true, value: undefined };
+          },
+        };
+      }
+
+      ReactDOM.render(
+        React.createElement(GraphiQL, {
+          fetcher: subscribe,
+          defaultVariableEditorOpen: true,
+        }),
+        document.getElementById("graphiql")
+      );
+    </script>
+  </body>
+</html>`
 
 export default () => {
   return new Response(template, {
