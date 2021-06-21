@@ -1,6 +1,6 @@
-import { makeServer } from 'graphql-ws'
-import { buildSchema } from 'graphql'
-import graphiql from './graphiql'
+import { makeServer } from 'graphql-ws';
+import { buildSchema } from 'graphql';
+import graphiql from './graphiql';
 
 // construct a schema, using GraphQL schema language
 const schema = buildSchema(`
@@ -10,7 +10,7 @@ const schema = buildSchema(`
   type Subscription {
     greetings: String
   }
-`)
+`);
 
 // the roots provide resolvers for each GraphQL operation
 const roots = {
@@ -20,66 +20,66 @@ const roots = {
   subscription: {
     greetings: async function* sayHiIn5Languages() {
       for (const hi of ['Hi', 'Bonjour', 'Hola', 'Ciao', 'Zdravo']) {
-        yield { greetings: hi }
+        yield { greetings: hi };
       }
     },
   },
-}
+};
 
 // use cloudflare server websocket for graphql-ws
 function useWebsocket(socket, request, protocol) {
   // configure and make server
-  const server = makeServer({ schema, roots })
+  const server = makeServer({ schema, roots });
 
   // accept socket to begin
-  socket.accept()
+  socket.accept();
 
   // use the server
   const closed = server.opened(
     {
       protocol, // will be validated
-      send: data => socket.send(data),
+      send: (data) => socket.send(data),
       close: (code, reason) => socket.close(code, reason),
-      onMessage: cb =>
-        socket.addEventListener('message', async event => {
+      onMessage: (cb) =>
+        socket.addEventListener('message', async (event) => {
           try {
             // wait for the the operation to complete
             // - if init message, waits for connect
             // - if query/mutation, waits for result
             // - if subscription, waits for complete
-            await cb(event.data)
+            await cb(event.data);
           } catch (err) {
             // all errors that could be thrown during the
             // execution of operations will be caught here
-            socket.close(1011, err.message)
+            socket.close(1011, err.message);
           }
         }),
     },
     // pass values to the `extra` field in the context
     { socket, request },
-  )
+  );
 
   // notify server that the socket closed
-  socket.addEventListener('close', (code, reason) => closed(code, reason))
+  socket.addEventListener('close', (code, reason) => closed(code, reason));
 }
 
 function handleRequest(request) {
-  const url = new URL(request.url)
+  const url = new URL(request.url);
   switch (url.pathname) {
     case '/':
-      return graphiql()
+      return graphiql();
     case '/graphql':
-      const upgradeHeader = request.headers.get('Upgrade')
+      const upgradeHeader = request.headers.get('Upgrade');
       if (upgradeHeader !== 'websocket') {
-        return new Response('Expected websocket', { status: 400 })
+        return new Response('Expected websocket', { status: 400 });
       }
 
-      const [client, server] = Object.values(new WebSocketPair())
+      const [client, server] = Object.values(new WebSocketPair());
 
       // the server socket object does not have the protocol prop, extract it from the header
-      const subprotocol = request.headers.get('Sec-WebSocket-Protocol')
+      const subprotocol = request.headers.get('Sec-WebSocket-Protocol');
 
-      useWebsocket(server, request, subprotocol)
+      useWebsocket(server, request, subprotocol);
 
       return new Response(null, {
         status: 101,
@@ -92,12 +92,12 @@ function handleRequest(request) {
           // for the client to be able to detect that the issue is with the subprotocol and not something else.
           'Sec-WebSocket-Protocol': subprotocol,
         },
-      })
+      });
     default:
-      return new Response('Not found', { status: 404 })
+      return new Response('Not found', { status: 404 });
   }
 }
 
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request))
-})
+addEventListener('fetch', (event) => {
+  event.respondWith(handleRequest(event.request));
+});

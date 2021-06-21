@@ -5,4 +5,4 @@ module.exports = {
     // we dont bundle for 'browser' in cloudflare workers
     mainFields: ['module', 'main'],
   },
-}
+};

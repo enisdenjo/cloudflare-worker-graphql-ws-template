@@ -130,12 +130,12 @@ const template = `
       );
     </script>
   </body>
-</html>`
+</html>`;
 
 export default () => {
   return new Response(template, {
     headers: {
       'Content-type': 'text/html; charset=utf-8',
     },
-  })
-}
+  });
+};
