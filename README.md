@@ -1,6 +1,6 @@
-# [🚡 `graphql-ws`](https://github.com/enisdenjo/graphql-ws) on [CloudFlare Worker](https://workers.cloudflare.com/) using [WebSockets](https://developers.cloudflare.com/workers/runtime-apis/websockets) template
+# [🚡 `graphql-ws`](https://github.com/enisdenjo/graphql-ws) on [Cloudflare Worker](https://workers.cloudflare.com/) using [WebSockets](https://developers.cloudflare.com/workers/runtime-apis/websockets) template
 
-A template for WebSocket powered CloudFlare Worker project using graphql-ws.
+A template for WebSocket powered Cloudflare Worker project using graphql-ws.
 
 ## Getting started
 
