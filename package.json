@@ -2,7 +2,7 @@
   "name": "cloudflare-worker-graphql-ws-template",
   "private": true,
   "version": "0.0.0",
-  "description": "A template for WebSocket powered Cloudflare Worker project using graphql-ws",
+  "description": "A template for WebSockets powered Cloudflare Worker project using graphql-ws",
   "main": "index.js",
   "author": "Denis Badurina <badurinadenis@gmail.com>",
   "license": "MIT",
