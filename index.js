@@ -1,4 +1,4 @@
-import { makeServer, GRAPHQL_TRANSPORT_WS_PROTOCOL } from 'graphql-ws'
+import { makeServer } from 'graphql-ws/lib/index.mjs' // TODO-db-210621 use es modules by default
 import { buildSchema } from 'graphql'
 import template from './template'
 
@@ -27,7 +27,7 @@ const roots = {
 }
 
 // use cloudflare server websocket for graphql-ws
-function useWebsocket(socket, request) {
+function useWebsocket(socket, request, protocol) {
   // configure and make server
   const server = makeServer({ schema, roots })
 
@@ -37,20 +37,17 @@ function useWebsocket(socket, request) {
   // use the server
   const closed = server.opened(
     {
-      protocol: socket.protocol, // will be validated
-      send: data =>
-        new Promise((resolve, reject) => {
-          socket.send(data, err => (err ? reject(err) : resolve()))
-        }), // control your data flow by timing the promise resolve
-      close: (code, reason) => socket.close(code, reason), // there are protocol standard closures
+      protocol, // will be validated
+      send: data => socket.send(data),
+      close: (code, reason) => socket.close(code, reason),
       onMessage: cb =>
-        socket.on('message', async event => {
+        socket.addEventListener('message', async event => {
           try {
             // wait for the the operation to complete
             // - if init message, waits for connect
             // - if query/mutation, waits for result
             // - if subscription, waits for complete
-            await cb(event.toString())
+            await cb(event.data)
           } catch (err) {
             // all errors that could be thrown during the
             // execution of operations will be caught here
@@ -63,7 +60,7 @@ function useWebsocket(socket, request) {
   )
 
   // notify server that the socket closed
-  socket.once('close', (code, reason) => closed(code, reason))
+  socket.addEventListener('close', (code, reason) => closed(code, reason))
 }
 
 function handleRequest(request) {
@@ -71,27 +68,30 @@ function handleRequest(request) {
     const url = new URL(request.url)
     switch (url.pathname) {
       case '/':
-        return template()
+        return template() // render graphiql
       case '/graphql':
         const upgradeHeader = request.headers.get('Upgrade')
         if (upgradeHeader !== 'websocket') {
           return new Response('Expected websocket', { status: 400 })
         }
 
-        let acceptSubprotocol = request.headers.get('Sec-WebSocket-Protocol')
-        if (acceptSubprotocol !== GRAPHQL_TRANSPORT_WS_PROTOCOL) {
-          // if the subprotcol requested by the client is not acceptable, return null in the header
-          acceptSubprotocol = null
-        }
-
         const [client, server] = Object.values(new WebSocketPair())
-        useWebsocket(server, request)
+
+        // the server socket object does not have the protocol prop, extract it from the header
+        const subprotocol = request.headers.get('Sec-WebSocket-Protocol')
+
+        useWebsocket(server, request, subprotocol)
 
         return new Response(null, {
           status: 101,
           webSocket: client,
           headers: {
-            'Sec-WebSocket-Protocol': acceptSubprotocol,
+            // As per the WS spec, if the server does not accept the subprotocol - it should omit this header.
+            // HOWEVER, if the server does not respond with the same header value here, Chrome will abruptly
+            // terminate the connection with a 1006 code. so, we intentionally respond with the same header
+            // and have graphql-ws gracefully close the socket for an invalid protocol with a 1002 code in order
+            // for the client to be able to detect that the issue is with the subprotocol and not something else.
+            'Sec-WebSocket-Protocol': subprotocol,
           },
         })
       default:
