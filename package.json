@@ -1,0 +1,13 @@
+{
+  "name": "cloudflare-worker-graphql-ws-template",
+  "private": true,
+  "version": "0.0.0",
+  "description": "A template for WebSocket powered CloudFlare Worker project using graphql-ws",
+  "main": "index.js",
+  "author": "Denis Badurina <badurinadenis@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/wrangler": "^1.17.0",
+    "prettier": "^1.18.2"
+  }
+}
