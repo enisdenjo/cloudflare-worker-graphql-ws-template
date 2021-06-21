@@ -3,10 +3,10 @@ name: Deploy to Cloudflare Workers
 on: workflow_dispatch
 
 jobs:
-  build-and-deploy:
-    name: Build and deploy
+  build-and-publish:
+    name: Build and publish
     runs-on: ubuntu-latest
-    environment: graphql-ws.enisdenjo.workers.dev
+    environment: Cloudflare Workers
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -16,7 +16,7 @@ jobs:
           node-version: '14'
       - name: Install
         run: yarn install --immutable
-      - name: Deploy
+      - name: Publish
         uses: cloudflare/wrangler-action@1.3.0
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
