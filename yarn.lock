@@ -57,7 +57,7 @@ __metadata:
   dependencies:
     "@cloudflare/wrangler": ^1.17.0
     graphql: ^15.5.1
-    graphql-ws: ^5.1.2
+    graphql-ws: ^5.2.0
     prettier: ^2.3.1
   languageName: unknown
   linkType: soft
@@ -109,12 +109,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql-ws@npm:^5.1.2":
-  version: 5.1.2
-  resolution: "graphql-ws@npm:5.1.2"
+"graphql-ws@npm:^5.2.0":
+  version: 5.2.0
+  resolution: "graphql-ws@npm:5.2.0"
   peerDependencies:
     graphql: ">=0.11 <=15"
-  checksum: 0120a09cfd30006021a65601a9627bb82e0cc645f19b41855354a8788b7a701b78326257f222b078bb95a97c5ab0cc5cac480f0e5212fb408c70c7f8f6f00d2e
+  checksum: bc992f652c09b5905d526bc742936e8af682558cee71bf4cef40d36436c2ade8ccd035fbf7e59423d7738fbc3faf90ebe4833a4c6e97333fd194d11f4fb69563
   languageName: node
   linkType: hard
 

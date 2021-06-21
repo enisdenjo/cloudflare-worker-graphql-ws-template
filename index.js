@@ -1,4 +1,4 @@
-import { makeServer } from 'graphql-ws';
+import { makeServer, MessageType, stringifyMessage } from 'graphql-ws';
 import { buildSchema } from 'graphql';
 import graphiql from './graphiql';
 
@@ -34,6 +34,24 @@ function useWebsocket(socket, request, protocol) {
   // accept socket to begin
   socket.accept();
 
+  // subprotocol pinger because WS level ping/pongs are not be available
+  let pinger, pongWait;
+  function ping() {
+    if (socket.readyState === socket.OPEN) {
+      // send the subprotocol level ping message
+      socket.send(stringifyMessage({ type: MessageType.Ping }));
+
+      // wait for the pong for 6 seconds and then terminate
+      pongWait = setTimeout(() => {
+        clearInterval(pinger);
+        socket.close();
+      }, 6000);
+    }
+  }
+
+  // ping the client on an interval every 12 seconds
+  pinger = setInterval(() => ping(), 12000);
+
   // use the server
   const closed = server.opened(
     {
@@ -54,13 +72,19 @@ function useWebsocket(socket, request, protocol) {
             socket.close(1011, err.message);
           }
         }),
+      // pong received, clear termination timeout
+      onPong: () => clearTimeout(pongWait),
     },
     // pass values to the `extra` field in the context
     { socket, request },
   );
 
-  // notify server that the socket closed
-  socket.addEventListener('close', (code, reason) => closed(code, reason));
+  // notify server that the socket closed and stop the pinger
+  socket.addEventListener('close', (code, reason) => {
+    clearTimeout(pongWait);
+    clearInterval(pinger);
+    closed(code, reason);
+  });
 }
 
 function handleRequest(request) {
