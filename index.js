@@ -112,7 +112,7 @@ function handleRequest(request) {
           // As per the WS spec, if the server does not accept the subprotocol - it should omit this header.
           // HOWEVER, if the server does not respond with the same header value here, Chrome will abruptly
           // terminate the connection with a 1006 code. so, we intentionally respond with the same header
-          // and have graphql-ws gracefully close the socket for an invalid protocol with a 1002 code in order
+          // and have graphql-ws gracefully close the socket for an invalid protocol in order
           // for the client to be able to detect that the issue is with the subprotocol and not something else.
           'Sec-WebSocket-Protocol': subprotocol,
         },
