@@ -21,7 +21,7 @@ wrangler generate my-graphql-ws https://github.com/enisdenjo/cloudflare-worker-g
 
 - Server WebSocket instance does not contain the `protocol` property ([as `ws` does](https://github.com/websockets/ws/blob/145480a5b520ee951d848009d51069bfd7ed928c/lib/websocket.js#L115-L120)) which is why you should pass the `Sec-WebSocket-Protocol` header to the `graphql-ws` server
 - Message listener event `data` property is already a string
-- Responding with the same `Sec-WebSocket-Protocol` header is necessary for Chrome otherwise it will abruptly terminate the connection with a `1006` close event code
+- If the client does not support the `"graphql-transport-ws"` subprotocol, the `Sec-WebSocket-Protocol` header will be omitted. This causes Chrome to abruptly terminate the connection with a `1006` close event code.
 - `webpack.config.js` is configured to omit the `browser` entry field in `package.json`s since we are bundling for Node workers and not for browsers
 
   _This is especially necessary for `graphql-ws` since the `browser` bundle does NOT contain any server code._

@@ -1,4 +1,9 @@
-import { makeServer, MessageType, stringifyMessage } from 'graphql-ws';
+import {
+  handleProtocols,
+  makeServer,
+  MessageType,
+  stringifyMessage,
+} from 'graphql-ws';
 import { buildSchema } from 'graphql';
 import graphiql from './graphiql';
 
@@ -100,22 +105,22 @@ function handleRequest(request) {
 
       const [client, server] = Object.values(new WebSocketPair());
 
-      // the server socket object does not have the protocol prop, extract it from the header
-      const subprotocol = request.headers.get('Sec-WebSocket-Protocol');
+      const protocol = handleProtocols(
+        request.headers.get('Sec-WebSocket-Protocol'),
+      );
 
       useWebsocket(server, request, subprotocol);
 
       return new Response(null, {
         status: 101,
         webSocket: client,
-        headers: {
-          // As per the WS spec, if the server does not accept the subprotocol - it should omit this header.
-          // HOWEVER, if the server does not respond with the same header value here, Chrome will abruptly
-          // terminate the connection with a 1006 code. so, we intentionally respond with the same header
-          // and have graphql-ws gracefully close the socket for an invalid protocol in order
-          // for the client to be able to detect that the issue is with the subprotocol and not something else.
-          'Sec-WebSocket-Protocol': subprotocol,
-        },
+        headers: protocol
+          ? {
+              // As per the WS spec, if the server does not accept any subprotocol - it should omit this header.
+              // Beware that doing so will have Chrome abruptly close the WebSocket connection with a 1006 code.
+              'Sec-WebSocket-Protocol': protocol,
+            }
+          : {},
       });
     default:
       return new Response('Not found', { status: 404 });
